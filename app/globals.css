@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #FFFBF0;
+  --surface: #FFFFFF;
+  --ink: #111111;
+  --muted: #6B6B6B;
+  --pri: #FFD23F;
+  --acc: #7C5CFF;
+  --ok: #2EC4A0;
+  --err: #FF5A5F;
+  --shadow: #111111;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --paper: #14141A;
+    --surface: #1E1E26;
+    --ink: #F5F5F5;
+    --muted: #9A9AA8;
+    --acc: #9B84FF;
+    --ok: #3DDBB4;
+    --err: #FF7A7F;
+    --shadow: #F5F5F5;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root[data-theme="dark"] {
+  --paper: #14141A;
+  --surface: #1E1E26;
+  --ink: #F5F5F5;
+  --muted: #9A9AA8;
+  --acc: #9B84FF;
+  --ok: #3DDBB4;
+  --err: #FF7A7F;
+  --shadow: #F5F5F5;
 }
+
+/* Lets us write bg-paper, text-ink, border-ink, font-heading... in Tailwind */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-pri: var(--pri);
+  --color-acc: var(--acc);
+  --color-ok: var(--ok);
+  --color-err: var(--err);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+.nb-btn {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 8px 16px;
+  box-shadow: 3px 3px 0 var(--shadow);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.nb-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shadow); }
+.nb-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--shadow); }
+.nb-btn:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+.nb-btn-primary { background: var(--pri); color: #111111; }
+
+.nb-card {
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 6px 6px 0 var(--shadow);
+}
+
+@keyframes blink { 50% { background: transparent; } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+
+@keyframes miss {
+  0%   { background: var(--err); transform: translateX(-3px); }
+  30%  { transform: translateX(3px); }
+  60%  { transform: translateX(-2px); }
+  100% { background: var(--pri); transform: none; }
+}
+.miss { animation: miss 0.2s; }
