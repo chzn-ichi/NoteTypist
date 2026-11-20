@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import WriteNotes from "@/components/WriteNotes";
 import {
   DETAIL_LEVELS,
@@ -12,13 +14,14 @@ import {
   type DetailLevel,
 } from "@/lib/notes/config";
 import type { Plan, PlanPart, WritePart } from "@/lib/notes/types";
-import { useRequireUser } from "@/hooks/useRequireUser";
 
 type DraftPart = PlanPart & { include: boolean };
 type Step = "input" | "planning" | "review" | "write";
 
+const DRAFT_KEY = "notetypist-draft";
+
 export default function NewNotes() {
-  const ready = useRequireUser("/new");
+  const router = useRouter();
   const [step, setStep] = useState<Step>("input");
   const [text, setText] = useState("");
   const [minutes, setMinutes] = useState<number>(5);
@@ -30,17 +33,48 @@ export default function NewNotes() {
   const [chunks, setChunks] = useState<string[]>([]);
   const [writeParts, setWriteParts] = useState<WritePart[]>([]);
 
+  // Restore what the user typed before they were sent to log in
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(DRAFT_KEY); // use it once
+      const d = JSON.parse(raw);
+      if (typeof d.text === "string") setText(d.text);
+      if ((MINUTE_OPTIONS as readonly number[]).includes(d.minutes)) setMinutes(d.minutes);
+      if (d.detail in DETAIL_LEVELS) setDetail(d.detail);
+    } catch {
+      // storage unavailable or damaged: just start with an empty form
+    }
+  }, []);
+
+  function saveDraft() {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ text, minutes, detail }));
+    } catch {
+      // if storage is blocked or full, the user simply types again
+    }
+  }
+
   const trimmed = text.trim();
   const words = trimmed ? trimmed.split(/\s+/).length : 0;
   const tooShort = trimmed.length < MIN_CHARS;
   const tooLong = text.length > MAX_CHARS;
   const estParts = estimateParts(words, minutes, detail);
 
-  if (!ready) return <p className="text-muted">Loading...</p>;
   
   async function makePlan() {
     setError("");
     setNeedsLogin(false);
+
+    // Not logged in? Keep what they typed, send them to log in, and bring them back here
+    const { data: auth } = await createClient().auth.getUser();
+    if (!auth.user) {
+      saveDraft();
+      router.push("/login?next=%2Fnew");
+      return;
+    }
+
     setStep("planning");
 
     const res = await fetch("/api/plan", {
@@ -248,7 +282,11 @@ export default function NewNotes() {
         <p role="alert" className="rounded-lg border-2 border-ink bg-err px-3 py-2 text-[#111111]">
           {error}{" "}
           {needsLogin && (
-            <Link href="/login" className="font-semibold underline underline-offset-4">
+            <Link
+              href="/login?next=%2Fnew"
+              onClick={saveDraft}
+              className="font-semibold underline underline-offset-4"
+            >
               Log in
             </Link>
           )}
