@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
-import Results from "@/components/Results";
+import Results, { type SaveStatus } from "@/components/Results";
 import ThemeToggle from "@/components/ThemeToggle";
 import TypingArea from "@/components/TypingArea";
 import { useTyping, type Mode } from "@/hooks/useTyping";
 import type { Note } from "@/lib/samples";
+import { createClient } from "@/lib/supabase/client";
 
 export default function TypingSession({ note, nextId }: { note: Note; nextId: string }) {
   const [mode, setMode] = useState<Mode>("strict");
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const t = useTyping(note.text, mode);
   const typing = t.started && !t.finished;
   const resultsRef = useRef<HTMLDivElement>(null);
+  const saved = useRef(false); // makes sure one finished session is saved only once
 
   // When the session ends, scroll down so the results card is visible
   useEffect(() => {
@@ -21,6 +24,40 @@ export default function TypingSession({ note, nextId }: { note: Note; nextId: st
       resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [t.finished]);
+
+  // When the session ends, save it if someone is logged in
+  useEffect(() => {
+    if (!t.finished) {
+      saved.current = false; // ready for the next session
+      return;
+    }
+    if (saved.current) return;
+    saved.current = true;
+
+    async function save() {
+      setSaveStatus("saving");
+      const supabase = createClient();
+
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        setSaveStatus("guest");
+        return;
+      }
+
+      const { error } = await supabase.from("typing_sessions").insert({
+        note_id: note.id,
+        note_title: note.title,
+        mode,
+        wpm: t.wpm,
+        accuracy: t.accuracy,
+        seconds: t.seconds,
+        chars: note.text.length,
+        missed: t.missed,
+      });
+      setSaveStatus(error ? "error" : "saved");
+    }
+    save();
+  }, [t.finished, t.wpm, t.accuracy, t.seconds, t.missed, mode, note]);
 
   function toggleMode(e: React.MouseEvent<HTMLButtonElement>) {
     e.currentTarget.blur();
@@ -30,7 +67,6 @@ export default function TypingSession({ note, nextId }: { note: Note; nextId: st
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-6">
-      {/* Faded while you type, but hover over it to bring it back */}
       <header
         className={`flex flex-wrap items-center justify-between gap-3 transition-opacity duration-500 ${
           typing ? "opacity-10 hover:opacity-100 focus-within:opacity-100" : ""
@@ -91,6 +127,7 @@ export default function TypingSession({ note, nextId }: { note: Note; nextId: st
               missed={t.missed}
               onAgain={t.reset}
               nextHref={`/type/${nextId}`}
+              saveStatus={saveStatus}
             />
           </div>
         )}

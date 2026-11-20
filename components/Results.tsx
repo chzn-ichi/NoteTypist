@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export type SaveStatus = "idle" | "saving" | "saved" | "guest" | "error";
+
 type Props = {
   wpm: number;
   accuracy: number;
@@ -7,6 +9,7 @@ type Props = {
   missed: Record<string, number>;
   onAgain: () => void;
   nextHref: string;
+  saveStatus: SaveStatus;
 };
 
 function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
@@ -22,8 +25,15 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
   );
 }
 
-export default function Results({ wpm, accuracy, seconds, missed, onAgain, nextHref }: Props) {
-  // The 6 keys you missed most
+export default function Results({
+  wpm,
+  accuracy,
+  seconds,
+  missed,
+  onAgain,
+  nextHref,
+  saveStatus,
+}: Props) {
   const top = Object.entries(missed)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
@@ -57,7 +67,30 @@ export default function Results({ wpm, accuracy, seconds, missed, onAgain, nextH
         <p className="mt-6 text-muted">No missed keys. Clean run.</p>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <p className="mt-6 text-sm text-muted" aria-live="polite">
+        {saveStatus === "saving" && "Saving your result..."}
+        {saveStatus === "saved" && (
+          <>
+            Saved to your{" "}
+            <Link href="/history" className="font-semibold underline underline-offset-4">
+              history
+            </Link>
+            .
+          </>
+        )}
+        {saveStatus === "guest" && (
+          <>
+            <Link href="/login" className="font-semibold underline underline-offset-4">
+              Log in
+            </Link>{" "}
+            to save your results and track your progress.
+          </>
+        )}
+        {saveStatus === "error" &&
+          "Could not save this result. It still counted, it just is not in your history."}
+      </p>
+
+      <div className="mt-5 flex flex-wrap gap-3">
         <button className="nb-btn" onClick={onAgain}>
           Type it again
         </button>

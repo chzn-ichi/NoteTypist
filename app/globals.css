@@ -90,3 +90,18 @@
   100% { background: var(--pri); transform: none; }
 }
 .miss { animation: miss 0.2s; }
+
+
+.nb-input {
+  width: 100%;
+  background: var(--surface);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+.nb-input:focus-visible {
+  outline: 3px solid var(--acc);
+  outline-offset: 2px;
+}

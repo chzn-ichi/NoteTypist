@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AuthButton from "@/components/AuthButton";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SAMPLE_NOTES } from "@/lib/samples";
@@ -8,7 +9,10 @@ export default function Home() {
     <main className="mx-auto max-w-3xl px-5 py-10">
       <div className="flex items-center justify-between">
         <Logo />
-        <ThemeToggle />
+        <div className="flex items-center gap-3">
+          <AuthButton />
+          <ThemeToggle />
+        </div>
       </div>
 
       <h1 className="mt-16 font-heading text-4xl font-bold leading-tight sm:text-5xl">
