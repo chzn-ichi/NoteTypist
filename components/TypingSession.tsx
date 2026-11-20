@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
 import PartProgress, { type Segment } from "@/components/PartProgress";
 import Results, { type SaveStatus } from "@/components/Results";
-import ThemeToggle from "@/components/ThemeToggle";
 import TypingArea from "@/components/TypingArea";
+import { useDismiss } from "@/hooks/useDismiss";
 import { useTyping, type Mode } from "@/hooks/useTyping";
 import { createClient } from "@/lib/supabase/client";
+import { toggleTheme } from "@/lib/theme";
 
 type Props = {
   note: { id: string; title: string; text: string };
@@ -31,10 +32,14 @@ export default function TypingSession({
 }: Props) {
   const [mode, setMode] = useState<Mode>("strict");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const t = useTyping(note.text, mode);
   const typing = t.started && !t.finished;
   const resultsRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const saved = useRef(false);
+
+  useDismiss(settingsOpen, settingsRef, () => setSettingsOpen(false));
 
   useEffect(() => {
     if (t.finished) {
@@ -75,9 +80,10 @@ export default function TypingSession({
     save();
   }, [t.finished, t.wpm, t.accuracy, t.seconds, t.missed, mode, note]);
 
-  function toggleMode(e: React.MouseEvent<HTMLButtonElement>) {
-    e.currentTarget.blur();
-    setMode(mode === "strict" ? "free" : "strict");
+  function chooseMode(next: Mode) {
+    setSettingsOpen(false);
+    if (next === mode) return;
+    setMode(next);
     t.reset();
   }
 
@@ -87,29 +93,71 @@ export default function TypingSession({
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-6">
+    <div className="mx-auto w-full max-w-5xl px-5">
+      {/* Fades while you type. Hover over it to bring it back. */}
       <header
-        className={`flex flex-wrap items-center justify-between gap-3 transition-opacity duration-500 ${
+        className={`flex items-center justify-between gap-3 py-5 transition-opacity duration-500 ${
           typing ? "opacity-10 hover:opacity-100 focus-within:opacity-100" : ""
         }`}
       >
-        <div className="flex items-center gap-4">
-          <Link href={backHref} className="nb-btn inline-block">
-            Back
-          </Link>
-          <Link href="/">
-            <Logo />
-          </Link>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button className="nb-btn" onClick={toggleMode}>
-            Mode: {mode === "strict" ? "fix mistakes" : "keep going"}
+        <Link href="/" aria-label="NoteTypist home">
+          <Logo />
+        </Link>
+
+        <div className="relative" ref={settingsRef}>
+          <button
+            className="nb-btn"
+            aria-haspopup="dialog"
+            aria-expanded={settingsOpen && !typing}
+            onClick={(e) => {
+              e.currentTarget.blur();
+              setSettingsOpen((o) => !o);
+            }}
+          >
+            Settings
           </button>
-          <ThemeToggle />
+
+          {settingsOpen && !typing && (
+            <div className="nb-menu" role="dialog" aria-label="Typing settings">
+              <p className="px-2.5 pb-1 pt-1.5 text-sm text-muted">When you make a mistake</p>
+              <div className="grid gap-2 px-1.5 pb-1.5">
+                <button
+                  className={mode === "strict" ? "nb-btn nb-btn-primary" : "nb-btn"}
+                  onClick={() => chooseMode("strict")}
+                >
+                  Fix it to continue
+                </button>
+                <button
+                  className={mode === "free" ? "nb-btn nb-btn-primary" : "nb-btn"}
+                  onClick={() => chooseMode("free")}
+                >
+                  Keep going
+                </button>
+              </div>
+              <hr />
+              <button
+                className="nb-menu-item"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  toggleTheme();
+                }}
+              >
+                Switch theme
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="pt-12">
+      <main className="mx-auto max-w-3xl pb-20 pt-6">
+        <Link
+          href={backHref}
+          className={`nb-link mb-6 transition-opacity duration-500 ${
+            typing ? "opacity-10 hover:opacity-100" : ""
+          }`}
+        >
+          Back
+        </Link>
         {shownSegments && shownSegments.length > 1 && (
           <div className="mb-6">
             <PartProgress segments={shownSegments} currentIndex={currentIndex} />

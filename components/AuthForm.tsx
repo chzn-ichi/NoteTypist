@@ -36,7 +36,10 @@ export default function AuthForm() {
       setNotice("Check your email to confirm your account, then log in.");
       return;
     }
-    router.push("/");
+    // Go back to the page the user came from, but only to a page on our own site
+    const next = new URLSearchParams(window.location.search).get("next");
+    const target = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+    router.push(target);
     router.refresh();
   }
 

@@ -182,12 +182,22 @@ export default function WriteNotes({ title, parts, minutes, onBack }: Props) {
     <div className="space-y-6">
       <div>
         <h2 className="font-heading text-3xl font-bold">
-          {allDone ? "All parts written" : "Writing your notes"}
+          {allDone
+            ? "All parts written"
+            : hasStarted
+              ? "Writing your notes"
+              : "Ready to write your notes"}
         </h2>
         <p className="mt-2 text-muted">
-          {doneCount} of {parts.length} parts done. Keep this page open until you save, because
-          your notes are not saved yet.
+          {hasStarted
+            ? `${doneCount} of ${parts.length} parts done. Keep this page open until you save, because your notes are not saved yet.`
+            : `${parts.length} ${parts.length === 1 ? "part" : "parts"} will be written one after another, which takes a few seconds each. Click Start writing when you are ready.`}
         </p>
+        {!hasStarted && (
+          <button className="nb-btn nb-btn-primary mt-5" onClick={runAll}>
+            Start writing
+          </button>
+        )}
       </div>
 
       <div className="flex gap-1.5" aria-hidden="true">
@@ -209,7 +219,7 @@ export default function WriteNotes({ title, parts, minutes, onBack }: Props) {
                   Part {i + 1}: {p.title}
                 </p>
                 <span className="text-sm text-muted">
-                  {s.state === "pending" && "Waiting"}
+                  {s.state === "pending" && hasStarted && "Up next"}
                   {s.state === "working" && "Writing..."}
                   {s.state === "done" && `${countWords(edited[p.id] ?? s.result.notes)} words`}
                   {s.state === "error" && "Failed"}
@@ -278,9 +288,9 @@ export default function WriteNotes({ title, parts, minutes, onBack }: Props) {
         <button className="nb-btn" onClick={goBack} disabled={saving}>
           Back to the plan
         </button>
-        {!allDone && !running && (
+        {!allDone && !running && hasStarted && (
           <button className="nb-btn nb-btn-primary" onClick={runAll}>
-            {hasStarted ? "Continue writing" : "Start writing"}
+            Continue writing
           </button>
         )}
         {running && (

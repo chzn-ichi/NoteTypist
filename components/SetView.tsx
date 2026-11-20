@@ -27,6 +27,11 @@ export default function SetView({ setId }: { setId: string }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [deleteError, setDeleteError] = useState("");
 
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [renameError, setRenameError] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
+
   useEffect(() => {
     async function load() {
       const supabase = createClient();
@@ -85,11 +90,41 @@ export default function SetView({ setId }: { setId: string }) {
     else router.push("/notes");
   }
 
+  function startRename(current: string) {
+    setDraft(current);
+    setRenameError("");
+    setEditing(true);
+  }
+
+  async function saveRename(current: string) {
+    const name = draft.trim();
+    if (name === current) {
+      setEditing(false); // nothing changed
+      return;
+    }
+    if (name.length < 1 || name.length > 120) {
+      setRenameError("The name must be 1 to 120 characters.");
+      return;
+    }
+
+    setSavingTitle(true);
+    const { error } = await createClient().from("note_sets").update({ title: name }).eq("id", setId);
+    setSavingTitle(false);
+
+    if (error) {
+      setRenameError("Could not rename. Please try again.");
+      return;
+    }
+    setState((s) => (s.status === "ready" ? { ...s, title: name } : s));
+    setEditing(false);
+  }
+
+
   if (state.status === "loading") return <p className="mt-12 text-muted">Loading...</p>;
 
   if (state.status === "guest") {
     return (
-      <div className="nb-card mt-12">
+      <div className="nb-card mt-6">
         <h2 className="font-heading text-xl font-bold">Log in to see these notes</h2>
         <Link href="/login" className="nb-btn nb-btn-primary mt-5 inline-block">
           Log in
@@ -100,7 +135,7 @@ export default function SetView({ setId }: { setId: string }) {
 
   if (state.status === "missing") {
     return (
-      <div className="nb-card mt-12">
+      <div className="nb-card mt-6">
         <h2 className="font-heading text-xl font-bold">Notes not found</h2>
         <p className="mt-2 text-muted">They may have been deleted, or they belong to another account.</p>
         <Link href="/notes" className="nb-btn nb-btn-primary mt-5 inline-block">
@@ -120,9 +155,60 @@ export default function SetView({ setId }: { setId: string }) {
   }));
 
   return (
-    <div className="mt-12 space-y-8">
+    <div className="mt-6 space-y-8">
       <div>
-        <h1 className="font-heading text-4xl font-bold">{title}</h1>
+        {editing ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveRename(title);
+            }}
+            className="flex flex-wrap items-center gap-3"
+          >
+            <input
+              className="nb-input min-w-0 flex-1 font-heading text-2xl font-bold"
+              aria-label="Name of your notes"
+              value={draft}
+              maxLength={120}
+              autoFocus
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                setRenameError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setEditing(false);
+              }}
+            />
+            <button type="submit" className="nb-btn nb-btn-primary" disabled={savingTitle}>
+              {savingTitle ? "Saving..." : "Save"}
+            </button>
+            <button type="button" className="nb-link" onClick={() => setEditing(false)}>
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h1 className="font-heading text-4xl font-bold">
+              <button
+                type="button"
+                title="Click to rename"
+                className="cursor-text text-left hover:underline hover:decoration-dashed hover:decoration-0.25 hover:underline-offset-8"
+                onClick={() => startRename(title)}
+              >
+                {title}
+              </button>
+            </h1>
+            <button type="button" className="nb-link" onClick={() => startRename(title)}>
+              Rename
+            </button>
+          </div>
+        )}
+        {renameError && (
+          <p role="alert" className="mt-2 rounded-lg border-2 border-ink bg-err px-3 py-2 text-sm text-[#111111]">
+            {renameError}
+          </p>
+        )}
         <p className="mt-2 text-muted">
           {parts.length} {parts.length === 1 ? "part" : "parts"}, about {parts.length * minutes} minutes
           of typing. {typed} of {parts.length} typed.

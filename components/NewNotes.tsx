@@ -12,11 +12,13 @@ import {
   type DetailLevel,
 } from "@/lib/notes/config";
 import type { Plan, PlanPart, WritePart } from "@/lib/notes/types";
+import { useRequireUser } from "@/hooks/useRequireUser";
 
 type DraftPart = PlanPart & { include: boolean };
 type Step = "input" | "planning" | "review" | "write";
 
 export default function NewNotes() {
+  const ready = useRequireUser("/new");
   const [step, setStep] = useState<Step>("input");
   const [text, setText] = useState("");
   const [minutes, setMinutes] = useState<number>(5);
@@ -34,6 +36,8 @@ export default function NewNotes() {
   const tooLong = text.length > MAX_CHARS;
   const estParts = estimateParts(words, minutes, detail);
 
+  if (!ready) return <p className="text-muted">Loading...</p>;
+  
   async function makePlan() {
     setError("");
     setNeedsLogin(false);
