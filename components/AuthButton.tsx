@@ -48,6 +48,9 @@ export default function AuthButton() {
       <span className="hidden max-w-[18ch] truncate text-sm text-muted sm:block">
         {user.email}
       </span>
+      <Link href="/notes" className="nb-btn inline-block">
+        My notes
+      </Link>
       <Link href="/history" className="nb-btn inline-block">
         History
       </Link>

@@ -24,8 +24,11 @@ export default function Home() {
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href={`/type/${SAMPLE_NOTES[0].id}`} className="nb-btn nb-btn-primary inline-block">
-          Start typing
+        <Link href="/new" className="nb-btn nb-btn-primary inline-block">
+          Create notes from my document
+        </Link>
+        <Link href={`/type/${SAMPLE_NOTES[0].id}`} className="nb-btn inline-block">
+          Try a sample
         </Link>
         <button className="nb-btn">Browse the library</button>
       </div>

@@ -9,6 +9,7 @@ type Props = {
   missed: Record<string, number>;
   onAgain: () => void;
   nextHref: string;
+  nextLabel?: string;
   saveStatus: SaveStatus;
 };
 
@@ -32,6 +33,7 @@ export default function Results({
   missed,
   onAgain,
   nextHref,
+  nextLabel,
   saveStatus,
 }: Props) {
   const top = Object.entries(missed)
@@ -95,7 +97,7 @@ export default function Results({
           Type it again
         </button>
         <Link href={nextHref} className="nb-btn nb-btn-primary inline-block">
-          Next note
+          {nextLabel ?? "Next note"}
         </Link>
       </div>
     </section>
